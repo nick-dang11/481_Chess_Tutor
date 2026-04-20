@@ -16,6 +16,9 @@ For Python specifically, we will use PyGame to create a visual representation th
 We intend to use minimax with alpha-beta pruning, an adversarial search algorithm to determine the best moves by simulating future moves while not exceeding a specified depth to lower time complexity.
 
 Week 1: Implement existing chess code and ensure the model understands game flow and logic.
+
 Week 2: Implement model move detection and debugging 
+
 Week 3: Implement move grading, may either advise a move to take based on the depth of its search, or perhaps review the move the player suggests. For both approaches, the model will grade it on a scale based on effectiveness.
+
 Week 4: Debugging and polishing; testing, demoing, and integrating with chess.com or lichess.com.
