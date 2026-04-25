@@ -1,4 +1,4 @@
-from Chess import ChessMain
+import ChessMain
 
 
 class GameState:
