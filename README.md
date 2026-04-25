@@ -22,3 +22,6 @@ Week 2: Implement model move detection and debugging
 Week 3: Implement move grading, may either advise a move to take based on the depth of its search, or perhaps review the move the player suggests. For both approaches, the model will grade it on a scale based on effectiveness.
 
 Week 4: Debugging and polishing; testing, demoing, and integrating with chess.com or lichess.com.
+
+Chess code provided courtesy of Katrina Alaimo https://github.com/katkaypettitt/chess/tree/main
+See LICENSE for more details.
