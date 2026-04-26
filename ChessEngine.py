@@ -49,6 +49,17 @@ class GameState:
         self.black_castle_queen_side = True
         self.castle_rights_log = [CastleRights(self.white_castle_king_side, self.black_castle_king_side,
                                                self.white_castle_queen_side, self.black_castle_queen_side)]
+        
+        self.white_piece_locations = self.get_piece_locations('w')
+        self.black_piece_locations = self.get_piece_locations('b')
+
+        def get_piece_locations(self, color):
+            locations = []
+            for row in range(len(self.board)):
+                for column in range(len(self.board[row])):
+                    if self.board[row][column][0] == color:
+                        locations.append((row, column))
+            return locations
 
     def make_move(self, move):
         """Takes a move as a parameter, executes it, and updates move log"""
@@ -58,10 +69,16 @@ class GameState:
         self.board[move.end_row][move.end_column] = move.piece_moved  # Moves piece to new location
         self.move_log.append(move)  # Logs move
 
-        if move.piece_moved == 'wK':
-            self.white_king_location = (move.end_row, move.end_column)
-        elif move.piece_moved == 'bK':
-            self.black_king_location = (move.end_row, move.end_column)
+        if move.piece_moved == 'w':
+            self.white_piece_locations.remove((move.start_row, move.start_column))
+            self.white_piece_locations.append((move.end_row, move.end_column))
+            if move.piece_captured != '--': 
+                self.black_piece_locations.remove((move.end_row, move.end_column))
+        else:   
+            self.black_king_location.remove = (move.end_row, move.end_column)
+            self.black_king_location.append((move.end_row, move.end_column))
+            if move.piece_captured != '--':
+                self.white_piece_locations.remove((move.end_row, move.end_column))
 
         # Pawn promotion
         if move.is_pawn_promotion:
@@ -209,12 +226,11 @@ class GameState:
     def get_all_possible_moves(self):
         """Gets all moves without considering checks"""
         moves = []
-        for row in range(len(self.board)):  # Number of rows
-            for column in range(len(self.board[row])):  # Number of columns in each row
-                turn = self.board[row][column][0]
-                if (turn == 'w' and self.white_to_move) or (turn == 'b' and not self.white_to_move):
-                    piece = self.board[row][column][1]
-                    self.move_functions[piece](row, column, moves)  # Calls move function based on piece type
+        current_location = self.white_piece_locations if self.white_to_move else self.black_piece_locations
+        
+        for row, column in current_location:
+            piece = self.board[row][column][1]
+            self.move_functions[piece](row, column, moves)
         return moves
 
     def get_pawn_moves(self, row, column, moves):
