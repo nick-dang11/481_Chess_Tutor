@@ -35,6 +35,8 @@ class GameState:
         self.in_check = False
         self.pins = []
         self.checks = []
+        self.captured_white_pieces = []
+        self.captured_black_pieces = []
 
         # En passant
         self.en_passant_possible = ()  # Coordinates for square where en passant possible
@@ -101,6 +103,13 @@ class GameState:
         self.castle_rights_log.append(CastleRights(self.white_castle_king_side, self.black_castle_king_side,
                                                    self.white_castle_queen_side, self.black_castle_queen_side))
 
+        # Update captured pieces lists
+        if move.piece_captured != '--':
+            if move.piece_captured[0] == 'w':
+                self.captured_white_pieces.append(move.piece_captured)
+            else:
+                self.captured_black_pieces.append(move.piece_captured)
+
         self.white_to_move = not self.white_to_move  # Switches turns
 
     def undo_move(self):
@@ -140,6 +149,13 @@ class GameState:
                 else:  # Queen side
                     self.board[move.end_row][move.end_column - 2] = self.board[move.end_row][move.end_column + 1]
                     self.board[move.end_row][move.end_column + 1] = '--'
+
+            # Update captured pieces lists
+            if move.piece_captured != '--':
+                if move.piece_captured[0] == 'w':
+                    self.captured_white_pieces.pop()
+                else:
+                    self.captured_black_pieces.pop()
 
             self.checkmate = False
             self.stalemate = False
