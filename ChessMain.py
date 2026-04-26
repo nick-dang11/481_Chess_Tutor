@@ -18,6 +18,10 @@ colours = [p.Color('#EBEBD0'), p.Color('#769455')]  # Board colours
 move_log_panel_width = 210  # May want to adjust this if the board_width/board_height is changed.
 move_log_panel_height = board_height
 
+# Tutor chat specifications
+tutor_chat_panel_width = 300
+tutor_chat_panel_height = board_height
+
 
 def load_images():
     """Initialize a global dictionary of images"""
@@ -39,7 +43,7 @@ def load_images():
 
 def main():
     """Main function which handles user input and updates graphics"""
-    screen = p.display.set_mode((board_width + move_log_panel_width, board_height))
+    screen = p.display.set_mode((board_width + move_log_panel_width + tutor_chat_panel_width, board_height))
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
     move_log_font = p.font.SysFont('Arial', 14, False, False)
@@ -136,6 +140,7 @@ def draw_game_state(screen, game_state, valid_moves, square_selected, move_log_f
     highlight_squares(screen, game_state, valid_moves, square_selected)  # Adds highlighting
     draw_pieces(screen, game_state.board)  # Draws pieces on the board
     draw_move_log(screen, game_state, move_log_font)  # Draws the move log
+    draw_tutor_panel(screen, "Hello! I'm your chess tutor. Let's analyze your moves together!", move_log_font)
 
 
 def draw_board(screen):
@@ -259,6 +264,29 @@ def draw_endgame_text(screen, text):
     text_object = font.render(text, True, p.Color('black'))
     screen.blit(text_object, text_location.move(2, 2))
 
+
+def draw_tutor_panel(screen, text, font):
+    """Draws tutor chat panel to the right of move log"""
+
+    tutor_area = p.Rect(board_width + move_log_panel_width, 0, tutor_chat_panel_width, tutor_chat_panel_height)
+    p.draw.rect(screen, p.Color("#272727"), tutor_area)
+
+    words = text.split(' ')
+    space = font.size(' ')[0]
+    max_width = tutor_chat_panel_width - 20  # Padding of 10 on each
+    x,y = tutor_area.left + 10, 10
+
+    line = ""
+    
+    for word in words: 
+        if font.size(line + word)[0] < max_width:
+            line += word + " "
+        else:
+            text_surface = font.render(line, True, p.Color('whitesmoke'))
+            screen.blit(text_surface, (x, y))
+            line = word + " "
+            y += font.get_height() + 5  # Move to next line with spacing
+    screen.blit(font.render(line, True, p.Color('whitesmoke')), (x, y))
 
 if __name__ == '__main__':
     main()
