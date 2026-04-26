@@ -12,39 +12,43 @@ PIECE_VALUES = {
     "R": 500,
     "B": 330,
     "N": 320,
-    "p": 100,
+    "P": 100,
 }
 
 def find_random_move(valid_moves):
     return random.choice(valid_moves)
 
+
 def evaluate_board(game_state):
+
+
     if game_state.checkmate:
         if game_state.white_to_move:
             return -CHECKMATE_SCORE
         else:
             return CHECKMATE_SCORE
-            
+        
     if game_state.stalemate:
         return STALEMATE_SCORE
-
-    score = 0
+    
+    score = 0 
     score += MATERIAL_WEIGHT * material_score(game_state)
-    return score
 
 def material_score(game_state):
     score = 0
 
-    for piece in game_state.captured_black_pieces:
-        value = PIECE_VALUES[piece[1]]
-        score += value
+    for row in range(8):
+        for col in range(8):
+            piece = game_state.board[row][col]
 
-        print(f"White captured black {piece} worth {value} points")
+            if piece != "--":
+                color = piece[0]
+                piece_type = piece[1]
+                value = PIECE_VALUES[piece_type]
 
-    for piece in game_state.captured_white_pieces:
-        value = PIECE_VALUES[piece[1]]
-        score -= value
-
-        print(f"Black captured white {piece} worth {value} points")
-
+                if color == "w":
+                    score += value
+                else:
+                    score -= value
+    
     return score

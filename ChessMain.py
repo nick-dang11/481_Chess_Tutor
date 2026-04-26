@@ -55,6 +55,8 @@ def main():
     running = True
     square_selected = ()  # Keeps track of the last click by user (tuple: (row, column))
     player_clicks = []  # Keeps track of player clicks (two tuples: ex. [(6, 4), (4, 4)])
+    suggestion_square = ()
+    tutor_message = "Hello! I'm your chess tutor. Let's analyze your moves together!"
     game_over = False
 
     while running:
@@ -70,23 +72,37 @@ def main():
                     location = p.mouse.get_pos()  # (x, y) location of mouse
                     column = location[0] // sq_size
                     row = location[1] // sq_size
-                    if square_selected == (row, column) or column >= dimension:  # User clicks same square or move log
-                        square_selected = ()  # Deselects
-                        player_clicks = []  # Clears player clicks
-                    else:
-                        square_selected = (row, column)
-                        player_clicks.append(square_selected)  # Appends both 1st and 2nd clicks
-                    if len(player_clicks) == 2:
-                        move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
-                        for i in range(len(valid_moves)):
-                            if move == valid_moves[i]:
-                                game_state.make_move(valid_moves[i])
-                                move_made = True
-                                animate = True
-                                square_selected = ()  # Resets user clicks
-                                player_clicks = []
-                        if not move_made:
-                            player_clicks = [square_selected]
+
+                    if column < dimension and row < dimension:
+
+                        if event.button == 1:
+                            if square_selected == (row, column) or column >= dimension:  # User clicks same square or move log
+                                square_selected = ()  # Deselects
+                                player_clicks = []  # Clears player clicks
+                            else:
+                                square_selected = (row, column)
+                                player_clicks.append(square_selected)  # Appends both 1st and 2nd clicks
+                            if len(player_clicks) == 2:
+                                move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                                for i in range(len(valid_moves)):
+                                    if move == valid_moves[i]:
+                                        game_state.make_move(valid_moves[i])
+                                        move_made = True
+                                        animate = True
+                                        square_selected = ()  # Resets user clicks
+                                        player_clicks = []
+                                if not move_made:
+                                    player_clicks = [square_selected]
+
+                        elif event.button == 3:
+                            suggestion_square = (row, column)
+                            piece = game_state.board[row][column]
+
+                            if piece != "--":
+                                tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
+                            else:
+                                tutor_message = f"You right-clicked an empty square on row {row}, column {column}"
+                        
 
             # Key handlers
             elif event.type == p.KEYDOWN:
@@ -120,7 +136,7 @@ def main():
             move_made = False
             animate = False
 
-        draw_game_state(screen, game_state, valid_moves, square_selected, move_log_font)
+        draw_game_state(screen, game_state, valid_moves, square_selected, suggestion_square, move_log_font, tutor_message)
 
         if game_state.checkmate or game_state.stalemate:
             game_over = True
@@ -134,13 +150,13 @@ def main():
         p.display.flip()
 
 
-def draw_game_state(screen, game_state, valid_moves, square_selected, move_log_font):
+def draw_game_state(screen, game_state, valid_moves, square_selected, suggestion_square, move_log_font, tutor_message):
     """Responsible for all graphics within a current game state"""
     draw_board(screen)  # Draws squares on the board
     highlight_squares(screen, game_state, valid_moves, square_selected)  # Adds highlighting
     draw_pieces(screen, game_state.board)  # Draws pieces on the board
     draw_move_log(screen, game_state, move_log_font)  # Draws the move log
-    draw_tutor_panel(screen, "Hello! I'm your chess tutor. Let's analyze your moves together!", move_log_font)
+    draw_tutor_panel(screen, tutor_message, move_log_font)
 
 
 def draw_board(screen):
@@ -180,6 +196,16 @@ def highlight_squares(screen, game_state, valid_moves,square_selected):
         s.fill(p.Color('yellow'))
         screen.blit(s, (start_column * sq_size, start_row * sq_size))
         screen.blit(s, (end_column * sq_size, end_row * sq_size))
+
+def highlight_suggestion_square(screen, suggestion_square):
+    if suggestion_square != ():
+        row, column = suggestion_square
+
+        s = p.surface((sq_size, sq_size))
+        s.set_alpha(90)
+        s.fill(p.color("skyblue"))
+
+        screen.blit(s, (column * sq_size, row * sq_size))
 
 
 def draw_pieces(screen, board):
