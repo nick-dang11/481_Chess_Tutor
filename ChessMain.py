@@ -3,7 +3,7 @@ import ChessEngine, ChessAI
 
 # Player settings. Turn player_one to True to play as white and/or player_two to True to play black.
 player_one = True  # If the AI is playing white, then False
-player_two = False  # Same as above but for black
+player_two = True  # Same as above but for black
 
 p.init()  # Initialize pygame
 
@@ -26,6 +26,18 @@ def load_images():
     for piece in pieces:
         images[piece] = p.transform.smoothscale(p.image.load(f'images/{piece}.png'), (sq_size, sq_size))
 
+    move_img = p.image.load('images/movementSquare.png').convert_alpha()
+    capt_img = p.image.load('images/captureSquare.png').convert_alpha()
+
+    move_img = p.transform.smoothscale(move_img, (sq_size + 4, sq_size + 4))
+    capt_img = p.transform.smoothscale(capt_img, (sq_size + 4, sq_size + 4))
+
+    move_img.set_alpha(200) 
+    capt_img.set_alpha(2000)
+
+    # Store in dictionary
+    images['movementSquare'] = move_img
+    images['captureSquare'] = capt_img
 
 def main():
     """Main function which handles user input and updates graphics"""
@@ -106,7 +118,7 @@ def main():
             move_made = False
             animate = False
 
-        draw_game_state(screen, game_state, square_selected, move_log_font)
+        draw_game_state(screen, game_state, valid_moves, square_selected, move_log_font)
 
         if game_state.checkmate or game_state.stalemate:
             game_over = True
@@ -120,10 +132,10 @@ def main():
         p.display.flip()
 
 
-def draw_game_state(screen, game_state, square_selected, move_log_font):
+def draw_game_state(screen, game_state, valid_moves, square_selected, move_log_font):
     """Responsible for all graphics within a current game state"""
     draw_board(screen)  # Draws squares on the board
-    highlight_squares(screen, game_state, square_selected)  # Adds highlighting
+    highlight_squares(screen, game_state, valid_moves, square_selected)  # Adds highlighting
     draw_pieces(screen, game_state.board)  # Draws pieces on the board
     draw_move_log(screen, game_state, move_log_font)  # Draws the move log
 
@@ -136,7 +148,7 @@ def draw_board(screen):
             p.draw.rect(screen, colour, p.Rect(column * sq_size, row * sq_size, sq_size, sq_size))
 
 
-def highlight_squares(screen, game_state, square_selected):
+def highlight_squares(screen, game_state, valid_moves,square_selected):
     """Highlights square selected and last move made"""
     # Highlights selected square
     if square_selected != ():
@@ -146,6 +158,14 @@ def highlight_squares(screen, game_state, square_selected):
             s.set_alpha(70)  # Transperancy value; 0 transparent; 255 opaque
             s.fill(p.Color('yellow'))
             screen.blit(s, (column * sq_size, row * sq_size))
+
+            for move in valid_moves:
+                if move.start_row == row and move.start_column == column:
+                    # if there's a piece to capture or an en passant move
+                    if move.piece_captured != '--' or move.is_en_passant_move:
+                        screen.blit(images['captureSquare'], (move.end_column * sq_size, move.end_row * sq_size))
+                    else:
+                        screen.blit(images['movementSquare'], (move.end_column * sq_size, move.end_row * sq_size))
 
     # Highlights last move
     if len(game_state.move_log) != 0:
