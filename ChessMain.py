@@ -26,16 +26,14 @@ def load_images():
     for piece in pieces:
         images[piece] = p.transform.smoothscale(p.image.load(f'images/{piece}.png'), (sq_size, sq_size))
 
-    move_img = p.image.load('images/movementSquare.png').convert_alpha()
-    capt_img = p.image.load('images/captureSquare.png').convert_alpha()
+    move_img = p.image.load('images/chessMove.png').convert_alpha()
+    capt_img = p.image.load('images/chessCapture.png').convert_alpha()
 
-    move_img = p.transform.smoothscale(move_img, (sq_size + 4, sq_size + 4))
-    capt_img = p.transform.smoothscale(capt_img, (sq_size + 4, sq_size + 4))
+    move_img = p.transform.smoothscale(move_img, (sq_size, sq_size))
+    capt_img = p.transform.smoothscale(capt_img, (sq_size, sq_size))
 
-    move_img.set_alpha(200) 
-    capt_img.set_alpha(2000)
+    move_img.set_alpha(100) 
 
-    # Store in dictionary
     images['movementSquare'] = move_img
     images['captureSquare'] = capt_img
 
