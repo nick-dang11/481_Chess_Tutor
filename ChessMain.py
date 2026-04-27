@@ -55,8 +55,10 @@ def main():
     running = True
     square_selected = ()  # Keeps track of the last click by user (tuple: (row, column))
     player_clicks = []  # Keeps track of player clicks (two tuples: ex. [(6, 4), (4, 4)])
-    suggestion_square = ()
-    tutor_message = "Hello! I'm your chess tutor. Let's analyze your moves together!"
+    tutor_square_selected = ()
+    tutor_clicks = []
+    tutor_moves_for_tutor = []
+    tutor_message = "Hello! I'm your chess tutor. Right Click to see possible moves"
     game_over = False
 
     while running:
@@ -73,35 +75,87 @@ def main():
                     column = location[0] // sq_size
                     row = location[1] // sq_size
 
-                    if column < dimension and row < dimension:
+                    if column >= dimension or row >= dimension:
+                        square_selected = ()
+                        player_clicks = []
+                        tutor_square_selected = ()
+                        tutor_clicks = []
+                        continue
 
-                        if event.button == 1:
-                            if square_selected == (row, column) or column >= dimension:  # User clicks same square or move log
-                                square_selected = ()  # Deselects
-                                player_clicks = []  # Clears player clicks
-                            else:
-                                square_selected = (row, column)
-                                player_clicks.append(square_selected)  # Appends both 1st and 2nd clicks
-                            if len(player_clicks) == 2:
-                                move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
-                                for i in range(len(valid_moves)):
-                                    if move == valid_moves[i]:
-                                        game_state.make_move(valid_moves[i])
-                                        move_made = True
-                                        animate = True
-                                        square_selected = ()  # Resets user clicks
-                                        player_clicks = []
-                                if not move_made:
-                                    player_clicks = [square_selected]
+                    clicked_square = (row, column)
+                    current_turn_color = 'w' if game_state.white_to_move else 'b'
 
-                        elif event.button == 3:
-                            suggestion_square = (row, column)
+                    if event.button == 1:
+                        tutor_square_selected = ()
+                        tutor_clicks = []
+
+
+                        if square_selected == clicked_square:  # User clicks same square or move log
+                            square_selected = ()  # Deselects
+                            player_clicks = []  # Clears player clicks
+                        else:
+                            square_selected = clicked_square
+                            player_clicks.append(square_selected)  # Appends both 1st and 2nd clicks
+                        if len(player_clicks) == 2:
+                            move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                            move_was_valid = False
+
+                            for i in range(len(valid_moves)):
+                                if move == valid_moves[i]:
+                                    game_state.make_move(valid_moves[i])
+                                    move_made = True
+                                    animate = True
+                                    square_selected = ()  # Resets user clicks
+                                    player_clicks = []
+                                    break
+
+                            if not move_was_valid:
+                                player_clicks = [square_selected]
+
+                    elif event.button == 3:
+                        square_selected = ()
+                        player_clicks = []
+
+                        if len(tutor_clicks) == 0:
                             piece = game_state.board[row][column]
-
-                            if piece != "--":
+                            if piece != "--" and piece[0] == current_turn_color:
+                                tutor_square_selected = clicked_square
+                                tutor_clicks = [clicked_square]
                                 tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
                             else:
+                                tutor_square_selected = ()
+                                tutor_clicks = []
                                 tutor_message = f"You right-clicked an empty square on row {row}, column {column}"
+                        else:
+                            start_square = tutor_clicks[0]
+                            end_square = clicked_square
+
+                            tutor_move = ChessEngine.Move(start_square, end_square, game_state.board)
+                            tutor_move_was_valid = False
+
+                            for valid_move in valid_moves:
+                                if tutor_move == valid_move:
+                                    tutor_payload = move_to_tutor_payload(valid_move)
+                                    tutor_moves_for_tutor.append(tutor_payload)
+
+                                    tutor_message = f"Stored tutor move: {tutor_payload['notation']}"
+                                    print("Tutor move stored:", tutor_payload)
+
+                                    tutor_move_was_valid = True
+                                    break
+                            
+                            if tutor_move_was_valid:
+                                tutor_square_selected = ()
+                                tutor_clicks = []
+                            else:
+                                piece = game_state.board[row][column]
+
+                                if piece != "--" and piece[0] == current_turn_color:
+                                    tutor_square_selected = clicked_square
+                                    tutor_clicks = [clicked_square]
+                                    tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
+                                else:
+                                    tutor_message = "That is not a legal move for selected piece"
                         
 
             # Key handlers
@@ -136,7 +190,7 @@ def main():
             move_made = False
             animate = False
 
-        draw_game_state(screen, game_state, valid_moves, square_selected, suggestion_square, move_log_font, tutor_message)
+        draw_game_state(screen, game_state, valid_moves, square_selected, tutor_square_selected, move_log_font, tutor_message)
 
         if game_state.checkmate or game_state.stalemate:
             game_over = True
@@ -150,9 +204,12 @@ def main():
         p.display.flip()
 
 
-def draw_game_state(screen, game_state, valid_moves, square_selected, suggestion_square, move_log_font, tutor_message):
+def draw_game_state(screen, game_state, valid_moves, square_selected, tutor_square_selected, move_log_font, tutor_message):
     """Responsible for all graphics within a current game state"""
     draw_board(screen)  # Draws squares on the board
+
+    active_square = square_selected if square_selected != () else tutor_square_selected
+
     highlight_squares(screen, game_state, valid_moves, square_selected)  # Adds highlighting
     draw_pieces(screen, game_state.board)  # Draws pieces on the board
     draw_move_log(screen, game_state, move_log_font)  # Draws the move log
@@ -313,6 +370,22 @@ def draw_tutor_panel(screen, text, font):
             line = word + " "
             y += font.get_height() + 5  # Move to next line with spacing
     screen.blit(font.render(line, True, p.Color('whitesmoke')), (x, y))
+
+def move_to_tutor_payload(move):
+    return{
+        "noatation": str(move),
+        "start_square": move.get_rank_file(move.start_row, move.start_column),
+        "end_square": move.get_rank_file(move.end_row, move.end_column),
+        "start_row": move.start_row,
+        "start_column":  move.start_column,
+        "end_row":  move.end_row,
+        "end_column":  move.end_column,
+        "piece_moved":  move.piece_moved,
+        "is_capture":  move.is_capture,
+        "is_castle_move":  move.is_castle_move,
+        "is_en_passant_move":  move.is_en_passant_move,
+        "is_pawn_promotion":  move.is_pawn_promotion,
+    }
 
 if __name__ == '__main__':
     main()
