@@ -183,12 +183,13 @@ def score_board(game_state):
         return stalemate_points
 
     score = 0
-    for row in range(len(game_state.board)):
-        for column in range(len(game_state.board)):
-            if game_state.board[row][column][0] == 'w':
-                score += piece_scores[game_state.board[row][column][1]]
-                score += piece_positions[game_state.board[row][column]][row][column]
-            elif game_state.board[row][column][0] == 'b':
-                score -= piece_scores[game_state.board[row][column][1]]
-                score -= piece_positions[game_state.board[row][column]][row][column]
+    for row, column in game_state.white_piece_locations:
+        piece_type = game_state.board[row][column][1]
+        score += piece_scores[piece_type]
+        score += piece_positions['w' + piece_type][row][column]
+
+    for row, column in game_state.black_piece_locations:
+        piece_type = game_state.board[row][column][1]
+        score -= piece_scores[piece_type]
+        score -= piece_positions['b' + piece_type][row][column]
     return score

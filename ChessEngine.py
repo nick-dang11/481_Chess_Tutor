@@ -49,6 +49,18 @@ class GameState:
         self.black_castle_queen_side = True
         self.castle_rights_log = [CastleRights(self.white_castle_king_side, self.black_castle_king_side,
                                                self.white_castle_queen_side, self.black_castle_queen_side)]
+        
+        self.white_piece_locations = self.get_piece_location('w')
+        self.black_piece_locations = self.get_piece_location('b')
+    
+        
+    def get_piece_location(self, color):
+        locations = []
+        for row in range(len(self.board)):
+            for column in range(len(self.board[row])):
+                if self.board[row][column][0] == color:
+                    locations.append((row, column))
+        return locations
 
     def make_move(self, move):
         """Takes a move as a parameter, executes it, and updates move log"""
@@ -57,6 +69,25 @@ class GameState:
         self.board[move.start_row][move.start_column] = '--'  # When a piece is moved, the square it leaves is blank
         self.board[move.end_row][move.end_column] = move.piece_moved  # Moves piece to new location
         self.move_log.append(move)  # Logs move
+
+        if move.piece_moved[0] == 'w':
+            self.white_piece_locations.remove((move.start_row, move.start_column))
+            self.white_piece_locations.append((move.end_row, move.end_column))
+
+            if move.is_en_passant_move:
+                self.black_piece_locations.remove((move.start_row, move.end_column))
+
+            elif move.piece_captured != '--':
+                self.black_piece_locations.remove((move.end_row, move.end_column))
+        else:
+            self.black_piece_locations.remove((move.start_row, move.start_column))
+            self.black_piece_locations.append((move.end_row, move.end_column))
+
+            if move.is_en_passant_move:
+                self.white_piece_locations.remove((move.start_row, move.end_column))
+
+            elif move.piece_captured != '--':
+                self.white_piece_locations.remove((move.end_row, move.end_column))
 
         if move.piece_moved == 'wK':
             self.white_king_location = (move.end_row, move.end_column)
@@ -120,6 +151,24 @@ class GameState:
             self.board[move.end_row][move.end_column] = move.piece_captured
             self.white_to_move = not self.white_to_move  # Switches turn back
 
+            if move.piece_moved[0] == 'w':
+                self.white_piece_locations.remove((move.end_row, move.end_column))
+                self.white_piece_locations.append((move.start_row, move.start_column))
+                
+                if move.is_en_passant_move:
+                    self.black_piece_locations.append((move.start_row, move.end_column))
+                elif move.piece_captured != '--':
+                    self.black_piece_locations.append((move.end_row, move.end_column))
+            else:
+                self.black_piece_locations.remove((move.end_row, move.end_column))
+                self.black_piece_locations.append((move.start_row, move.start_column))
+
+                if move.is_en_passant_move:
+                    self.white_piece_locations.append((move.start_row, move.end_column))
+
+                elif move.piece_captured != '--':
+                    self.white_piece_locations.append((move.end_row, move.end_column))
+
             # Updates king positions
             if move.piece_moved == 'wK':
                 self.white_king_location = (move.start_row, move.start_column)
@@ -178,7 +227,7 @@ class GameState:
                 check_row, check_column = check[0], check[1]
                 piece_checking = self.board[check_row][check_column]  # Enemy piece causing check
                 valid_squares = []
-                if piece_checking == 'N':
+                if piece_checking[1] == 'N':
                     valid_squares = [(check_row, check_column)]
                 else:
                     for i in range(1, len(self.board)):
@@ -209,12 +258,10 @@ class GameState:
     def get_all_possible_moves(self):
         """Gets all moves without considering checks"""
         moves = []
-        for row in range(len(self.board)):  # Number of rows
-            for column in range(len(self.board[row])):  # Number of columns in each row
-                turn = self.board[row][column][0]
-                if (turn == 'w' and self.white_to_move) or (turn == 'b' and not self.white_to_move):
-                    piece = self.board[row][column][1]
-                    self.move_functions[piece](row, column, moves)  # Calls move function based on piece type
+        curr_locations = self.white_piece_locations if self.white_to_move else self.black_piece_locations
+        for row, column in curr_locations:
+            piece = self.board[row][column][1]
+            self.move_functions[piece](row, column, moves)
         return moves
 
     def get_pawn_moves(self, row, column, moves):
