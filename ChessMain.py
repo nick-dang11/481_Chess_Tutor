@@ -1,5 +1,6 @@
 import pygame as p
 import ChessEngine, ChessAI
+import ChessTutor
 
 # Player settings. Turn player_one to True to play as white and/or player_two to True to play black.
 player_one = True  # If the AI is playing white, then False
@@ -55,6 +56,8 @@ def main():
     running = True
     square_selected = ()  # Keeps track of the last click by user (tuple: (row, column))
     player_clicks = []  # Keeps track of player clicks (two tuples: ex. [(6, 4), (4, 4)])
+    
+    tutor = ChessTutor.ChessTutor()
     tutor_square_selected = ()
     tutor_clicks = []
     tutor_moves_for_tutor = []
@@ -136,11 +139,14 @@ def main():
 
                             for valid_move in valid_moves:
                                 if tutor_move == valid_move:
+                                    tutor_message = "Analyzing..."
+                                    draw_game_state(screen, game_state, valid_moves, square_selected, tutor_square_selected, move_log_font, tutor_message)
+                                    p.display.flip()
+
                                     tutor_payload = move_to_tutor_payload(valid_move)
                                     tutor_moves_for_tutor.append(tutor_payload)
 
-                                    tutor_message = f"Stored tutor move: {tutor_payload['notation']}"
-                                    print("Tutor move stored:", tutor_payload)
+                                    tutor_message = tutor.get_tutor_response(game_state, valid_move, valid_moves)
 
                                     tutor_move_was_valid = True
                                     break

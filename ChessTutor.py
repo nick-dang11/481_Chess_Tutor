@@ -7,7 +7,7 @@ class ChessTutor:
     def __init__(self):
         # configure Gemini API
         self.client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
-        self.model_id = "gemini-2.0-flash"
+        self.model_id = "gemini-2.5-flash-lite"
 
     def get_tutor_response(self, gs, suggested_move, valid_moves):
         """
@@ -74,17 +74,29 @@ class ChessTutor:
     
     def _query_gemini(self, data):
         prompt = f"""
-        You are a supportive chess tutor. The player is considering {data['suggested_move']}.
+        Role:
+        You are the Chess.com game review coach. The goal is to provide a brief, professional evaluation of the move the player is considering.
         
         Context:
-        - Engine's top choice: {data['best_move']}
-        - Move Quality: {data['label']}
-        - Advantage Loss: {data['score_diff']}
-        - Insights: {", ".join(data['reasoning'])}
+        - Suggested Move: {data['suggested_move']}
+        - Classification: {data['label']}
+        - Best Move: {data['best_move']}
+        - Evaluation Change: {data['score_diff']}
+        - Tactical Motifs: {", ".join(data['reasoning'])}
 
-        Provide a concise, encouraging explanation of the move's strengths and weaknesses based on the above information.
-        Focus on whether they should commit to this move or consider alternatives, and why.
-        Max 3-5 sentences. 
+        1. START with the move classification in bold, e.g., "{data['suggested_move']} is a {data['label']}."
+        2. TONE: Use a supportive yet objective tone. 
+        - For "Best/Brilliant": Be enthusiastic ("You found the best move!").
+        - For "Inaccuracy/Mistake": Be helpful ("You missed a better way to...").
+        - For "Blunder/Miss": Be firm but encouraging ("You lose a piece, leading to a loss of material.").
+        3. FOCUS: Prioritize the "Why." If a tactic like a fork or pin was missed or allowed, name it explicitly.
+        4. BREVITY: Max 2-3 sentences. No fluff.
+
+        Example Outputs:
+        - "e4 is a book move. This is a solid opening choice that fights for control of the center."
+        - "Re1 is a mistake. You had an opportunity to develop your knight and challenge the center."
+        - "Bxf7+ is best! This sacrifice forces the king into the open and leads to a winning attack."
+        - "d5 is a blunder. You are losing a pawn this way and weakening your king's safety."
         """
 
         try:
@@ -92,6 +104,7 @@ class ChessTutor:
                 model=self.model_id,
                 contents=prompt
             )
+            print(response.text.strip()+ "\n")
             return response.text.strip()
         except Exception as e:
             print(f"Error querying Gemini API: {e}")
