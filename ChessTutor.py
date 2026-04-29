@@ -47,13 +47,16 @@ class ChessTutor:
         return self._query_gemini(analysis)
     
     def _get_move_label(self, diff):
-        if diff <= 0.2: return "Great"
-        if diff <= 0.9: return "Good"
-        if diff <= 2.0: return "Mistake"
-        return "Blunder"
+        if diff <= 5:    return "Best"       # Loss of < 0.05 pawns
+        if diff <= 20:   return "Excellent"  # Loss of < 0.20 pawns
+        if diff <= 50:   return "Good"       # Loss of < 0.50 pawns
+        if diff <= 100:  return "Inaccuracy" # Loss of ~ 1 pawn
+        if diff <= 250:  return "Mistake"    # Loss of ~ 2.5 pawns
+        return "Blunder"                     # Significant material/position loss
     
     def _generate_reasoning(self, move, s_score, b_score):
         reasoning = []
+        pawn_diff = round((b_score - s_score) / 100, 2)
 
         # capture
         if move.is_capture:
@@ -67,8 +70,8 @@ class ChessTutor:
         if end_val > start_val:
             reasoning.append(f"Your move improves the position of your {piece[1]} from {start_val} to {end_val}.")
 
-        if b_score - s_score > 1.2:
-            reasoning.append(f"However, the best move improves your position by {round(b_score - s_score, 2)} points compared to your move.")
+        if b_score - s_score > 50:
+            reasoning.append(f"However, the best move improves your position by {pawn_diff} pawns compared to your move.")
 
         return reasoning
     
