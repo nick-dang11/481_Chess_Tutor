@@ -33,22 +33,16 @@ def evaluate_board(game_state):
     
     score = 0 
     score += MATERIAL_WEIGHT * material_score(game_state)
+    
+    return score
 
 def material_score(game_state):
     score = 0
 
-    for row in range(8):
-        for col in range(8):
-            piece = game_state.board[row][col]
+   for piece in game_state.captured_black_pieces:
+       score += PIECE_VALUES[piece[1]]
 
-            if piece != "--":
-                color = piece[0]
-                piece_type = piece[1]
-                value = PIECE_VALUES[piece_type]
-
-                if color == "w":
-                    score += value
-                else:
-                    score -= value
+    for piece in game_state.captured_white_pieces:
+       score -= PIECE_VALUES[piece[1]]
     
     return score
