@@ -18,11 +18,86 @@ PIECE_VALUES = {
 
 def find_random_move(valid_moves):
     return random.choice(valid_moves)
+    
+def find_best_move(game_state, valid_moves):
+    if len(valid_moves) == 0:
+        return None
+    player_is_white = game_state.white_to_move
+
+    best_move = None
+    best_score = -CHECKMATE_SCORE
+    alpha = -CHECKMATE_SCORE
+    beta = CHECKMATE_SCORE
+
+    ordered_moves = order_moves(valid_moves)
+
+    for move in ordered_moves:
+        game_state.make_move(move)
+        next_moves = game_state.get_valid_moves()
+
+        score = min_value(game_state, next_moves, alpha,beta, 1, player_is_white)
+        game_state.undo_move()
+
+        if score > best_score:
+            best_score = score
+            best_move = move
+
+        alpha = max(alpha, best_score)
+
+    return best_move
+
+def max_value(game_state,valid_moves,alpha,beta,depth,player_is_white):
+    if cutoff_test(game_state, valid_moves, depth):
+        return evaluate_for_player(game_state,player_is_white)
+
+    value = -CHECKMATE_SCORE
+    for move in order_moves(valid_moves):
+        game_state.make_move(move)
+        next_moves = game_state.get_valid_moves()
+
+        value = max(value, min_value(game_state, next_moves, alpha, beta, depth + 1, player_is_white) )
+        game_state.undo_move()
+
+        if value >= beta:
+            return value
+
+        alpha = max(alpha, value)
+         
+    return value
+
+def min_value(game_state,valid_moves,alpha,beta,depth,player_is_white):
+    if cutoff_test(game_state, valid_moves, depth):
+        return evaluate_for_player(game_state,player_is_white)
+
+    value = CHECKMATE_SCORE
+    for move in order_moves(valid_moves):
+        game_state.make_move(move)
+        next_moves = game_state.get_valid_moves()
+
+        value = min(value, max_value(game_state, next_moves, alpha, beta, depth + 1, player_is_white) )
+        game_state.undo_move()
+
+        if value <= alpha:
+            return value
+
+        beta = min(beta, value)
+         
+    return value
+
+def cutoff_test(game_state, valid_moves, depth):
+    return(depth >= DEPTH or game_state.checkmate or game_state.stalemate or len(valid_moves) == 0)
+
+def evaluate_for_player(game_state, player_is_white):
+
+    score = evaluate_board(game_state)
+
+    if player_is_white:
+        return score
+    else:
+        return -score
 
 
 def evaluate_board(game_state):
-
-
     if game_state.checkmate:
         if game_state.white_to_move:
             return -CHECKMATE_SCORE
@@ -41,11 +116,11 @@ def evaluate_board(game_state):
 def material_score(game_state):
     score = 0
 
-   for piece in game_state.captured_black_pieces:
-       score += PIECE_VALUES[piece[1]]
+    for piece in game_state.captured_black_pieces:
+        score += PIECE_VALUES[piece[1]]
 
     for piece in game_state.captured_white_pieces:
-       score -= PIECE_VALUES[piece[1]]
+        score -= PIECE_VALUES[piece[1]]
     
     return score
 
@@ -54,6 +129,10 @@ def mobility_score(game_state):
     original_turn = game_state.white_to_move
     original_checkmate = game_state.checkmate
     original_stalemate = game_state.stalemate
+    original_in_check = game_state.in_check
+    original_pins = game_state.pins[:]
+    original_checks = game_state.checks[:]
+    
 
     game_state.white_to_move = True
     white_mobility = len(game_state.get_valid_moves())
@@ -64,7 +143,35 @@ def mobility_score(game_state):
     game_state.white_to_move = original_turn
     game_state.checkmate = original_checkmate
     game_state.stalemate = original_stalemate
+    game_state.in_check = original_in_check
+    game_state.pins[:] = original_pins
+    game_state.checks[:] = original_checks
 
     return white_mobility - black_mobility
+
+def order_moves(valid_moves):
+    moves = list(valid_moves)
+    random.shuffle(moves)
     
+    moves.sort(key = move_order_score, reverse = True)
+    return moves
+
+def move_order_score(move):
+    score = 0
+
+    if move.is_pawn_promotion:
+        score += 900
+
+    if move.piece_captured != "--":
+        captured_piece = move.piece_captured[1]
+        moved_piece = move.piece_moved[1]
+
+        score += 10 * PIECE_VALUES[captured_piece]
+        score -= PIECE_VALUES[moved_piece]
+
+    if move.is_castle_move:
+        score += 50
+
+    return score
+
     
