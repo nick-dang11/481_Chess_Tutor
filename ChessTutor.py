@@ -34,7 +34,10 @@ class ChessTutor:
         # normalize
         s_score = suggested_eval * turn_multiplier
         b_score = best_eval * turn_multiplier
-        score_diff = max(0, b_score - s_score)
+        score_diff = b_score - s_score
+        
+        if score_diff < -10:
+            return "Brilliant! Your move is better than the engine's suggestion!" 
 
         analysis = {
             'suggested_move': str(suggested_move),
@@ -47,12 +50,12 @@ class ChessTutor:
         return self._query_gemini(analysis)
     
     def _get_move_label(self, diff):
-        if diff <= 5:    return "Best"       # Loss of < 0.05 pawns
-        if diff <= 20:   return "Excellent"  # Loss of < 0.20 pawns
-        if diff <= 50:   return "Good"       # Loss of < 0.50 pawns
-        if diff <= 100:  return "Inaccuracy" # Loss of ~ 1 pawn
-        if diff <= 250:  return "Mistake"    # Loss of ~ 2.5 pawns
-        return "Blunder"                     # Significant material/position loss
+        if diff <= 0:    return "Best"       # Loss of < 0.05 pawns
+        if diff <= 15:   return "Excellent"  # Loss of < 0.20 pawns
+        if diff <= 30:   return "Good"       # Loss of < 0.50 pawns
+        if diff <= 60:  return "Inaccuracy" # Loss of ~ 1 pawn
+        if diff <= 150:  return "Mistake"    # Loss of ~ 2.5 pawns
+        if diff > 150:  return "Blunder"
     
     def _generate_reasoning(self, move, s_score, b_score):
         reasoning = []
