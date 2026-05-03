@@ -116,54 +116,59 @@ def main():
                             if not move_was_valid:
                                 player_clicks = [square_selected]
 
-                    elif event.button == 3:
-                        square_selected = ()
-                        player_clicks = []
-
-                        if len(tutor_clicks) == 0:
-                            piece = game_state.board[row][column]
-                            if piece != "--" and piece[0] == current_turn_color:
-                                tutor_square_selected = clicked_square
-                                tutor_clicks = [clicked_square]
-                                tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
-                            else:
-                                tutor_square_selected = ()
-                                tutor_clicks = []
-                                tutor_message = f"You right-clicked an empty square on row {row}, column {column}"
+                    elif event.button == 3: # Right Click
+                        if not game_state.white_to_move:
+                            tutor_message = "Tutor is currently only available for White."
                         else:
-                            start_square = tutor_clicks[0]
-                            end_square = clicked_square
+                            # Standard resets for right-click mode to prevent interaction with left-click state
+                            square_selected = ()
+                            player_clicks = []
 
-                            tutor_move = ChessEngine.Move(start_square, end_square, game_state.board)
-                            tutor_move_was_valid = False
-
-                            for valid_move in valid_moves:
-                                if tutor_move == valid_move:
-                                    tutor_message = "Analyzing..."
-                                    draw_game_state(screen, game_state, valid_moves, square_selected, tutor_square_selected, move_log_font, tutor_message)
-                                    p.display.flip()
-
-                                    tutor_payload = move_to_tutor_payload(valid_move)
-                                    tutor_moves_for_tutor.append(tutor_payload)
-
-                                    tutor_message = tutor.get_tutor_response(game_state, valid_move, valid_moves)
-
-                                    tutor_move_was_valid = True
-                                    break
-                            
-                            if tutor_move_was_valid:
-                                tutor_square_selected = ()
-                                tutor_clicks = []
-                            else:
+                            if len(tutor_clicks) == 0:
                                 piece = game_state.board[row][column]
-
                                 if piece != "--" and piece[0] == current_turn_color:
                                     tutor_square_selected = clicked_square
                                     tutor_clicks = [clicked_square]
                                     tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
                                 else:
-                                    tutor_message = "That is not a legal move for selected piece"
-                        
+                                    tutor_square_selected = ()
+                                    tutor_clicks = []
+                                    tutor_message = f"You right-clicked an empty square on row {row}, column {column}"
+                            
+                            else: # This is the second click
+                                start_square = tutor_clicks[0]
+                                end_square = clicked_square
+                                tutor_move = ChessEngine.Move(start_square, end_square, game_state.board)
+                                tutor_move_was_valid = False
+
+                                for valid_move in valid_moves:
+                                    if tutor_move == valid_move:
+                                        tutor_message = "Analyzing..."
+                                        # Force a screen update so the user sees "Analyzing..."
+                                        draw_game_state(screen, game_state, valid_moves, square_selected, tutor_square_selected, move_log_font, tutor_message)
+                                        p.display.flip()
+
+                                        tutor_payload = move_to_tutor_payload(valid_move)
+                                        tutor_moves_for_tutor.append(tutor_payload)
+                                        tutor_message = tutor.get_tutor_response(game_state, valid_move, valid_moves)
+                                        
+                                        tutor_move_was_valid = True
+                                        break
+                                
+                                if tutor_move_was_valid:
+                                    # Reset tutor clicks after a successful analysis
+                                    tutor_square_selected = ()
+                                    tutor_clicks = []
+                                else:
+                                    # Logic to allow switching pieces if the second click was a different friendly piece
+                                    piece = game_state.board[row][column]
+                                    if piece != "--" and piece[0] == current_turn_color:
+                                        tutor_square_selected = clicked_square
+                                        tutor_clicks = [clicked_square]
+                                        tutor_message = f"You right-clicked {piece} on row {row}, column {column}"
+                                    else:
+                                        # Keep the first piece selected, but update message for invalid move
+                                        tutor_message = "That is not a legal move for selected piece"
 
             # Key handlers
             elif event.type == p.KEYDOWN:

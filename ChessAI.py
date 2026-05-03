@@ -186,11 +186,13 @@ def score_board(game_state):
     score = 0
     for row, column in game_state.white_piece_locations:
         piece_type = game_state.board[row][column][1]
-        score += piece_scores[piece_type]
-        score += piece_positions['w' + piece_type][row][column]
+        if piece_type != '--':
+            score += piece_scores[piece_type]
+            score += piece_positions['w' + piece_type][row][column]
 
     for row, column in game_state.black_piece_locations:
         piece_type = game_state.board[row][column][1]
-        score -= piece_scores[piece_type]
-        score -= piece_positions['b' + piece_type][row][column]
+        if piece_type != '--':
+            score -= piece_scores[piece_type]
+            score -= piece_positions['b' + piece_type][row][column]
     return score

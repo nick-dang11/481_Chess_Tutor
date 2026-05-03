@@ -95,15 +95,9 @@ class GameState:
             self.black_king_location = (move.end_row, move.end_column)
 
         # Pawn promotion
+        # In ChessEngine.py, inside make_move
         if move.is_pawn_promotion:
-
-            # Player turn
-            if (self.white_to_move and ChessMain.player_one) or (not self.white_to_move and ChessMain.player_two):
-                promoted_piece = input('Promote to Q(ueen), R(ook), B(ishop), or (k)N(ight):').upper()
-
-            else:  # AI turn
-                promoted_piece = 'Q'
-
+            promoted_piece = 'Q'
             self.board[move.end_row][move.end_column] = move.piece_moved[0] + promoted_piece
 
         # En passant
