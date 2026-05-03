@@ -283,4 +283,7 @@ def move_order_score(move):
 
     return score
 
+def score_board(game_state):
+    return evaluate_board(game_state):
+
     
