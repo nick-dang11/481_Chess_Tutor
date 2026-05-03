@@ -253,9 +253,12 @@ class GameState:
         """Gets all moves without considering checks"""
         moves = []
         curr_locations = self.white_piece_locations if self.white_to_move else self.black_piece_locations
+        
         for row, column in curr_locations:
-            piece = self.board[row][column][1]
-            self.move_functions[piece](row, column, moves)
+            piece_str = self.board[row][column]
+            if piece_str != '--': # safety
+                piece = piece_str[1]
+                self.move_functions[piece](row, column, moves)
         return moves
 
     def get_pawn_moves(self, row, column, moves):
