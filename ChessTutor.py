@@ -50,11 +50,11 @@ class ChessTutor:
         return self._query_gemini(analysis)
     
     def _get_move_label(self, diff):
-        if diff <= 0:    return "Best"       # Loss of < 0.05 pawns
-        if diff <= 15:   return "Excellent"  # Loss of < 0.20 pawns
-        if diff <= 30:   return "Good"       # Loss of < 0.50 pawns
-        if diff <= 60:  return "Inaccuracy" # Loss of ~ 1 pawn
-        if diff <= 150:  return "Mistake"    # Loss of ~ 2.5 pawns
+        if diff <= 0:    return "Best"
+        if diff <= 15:   return "Excellent"
+        if diff <= 30:   return "Good"
+        if diff <= 60:  return "Inaccuracy"
+        if diff <= 150:  return "Mistake"
         if diff > 150:  return "Blunder"
     
     def _generate_reasoning(self, move, s_score, b_score):
