@@ -1,4 +1,6 @@
 import random
+#Changes 1
+
 
 # Depth of the algorithm determining AI moves. Higher set_depth == harder AI. Lower if engine is too slow.
 set_depth = 4
@@ -6,7 +8,7 @@ set_depth = 4
 # Positive values are good for white, negative for black. i.e. black checkmate = -1000
 checkmate_points = 1000
 stalemate_points = 0
-
+transposition_table = {}
 piece_scores = {'K': 20000, 'Q': 900, 'R': 500, 'B': 330, 'N': 320, 'P': 100}
 piece_positions = {
     'wP': [
@@ -123,15 +125,58 @@ piece_positions = {
 def find_random_move(valid_moves):
     return random.choice(valid_moves)
 
+def order_moves(moves):
+    def move_score(move):
+        score = 0
+
+        if move.is_capture:
+            captured = move.piece_captured[1]
+            attack_piece = move.piece_moved[1]
+
+            if captured != '-':
+                
+                score += 10 * piece_scores[captured] - piece_scores[attack_piece]
+
+        if move.is_pawn_promotion:
+            score += 9000
+        
+        if move.is_castle_move:
+            score += 500
+
+        piece = move.piece_moved
+        if piece in piece_positions:
+            score += piece_positions[piece][move.end_row][move.end_column]
+            score -= piece_positions[piece][move.start_row][move.start_column]
+
+        return score
+    return sorted(moves, key = move_score, reverse = True)
+
+            
+
 
 def find_best_move(game_state, valid_moves):
     """Helper method to make first recursive call"""
-    global next_move
+    global next_move, transposition_table
     next_move = None
-    random.shuffle(valid_moves)
-    find_negamax_move_alphabeta(game_state, valid_moves, set_depth, -checkmate_points, checkmate_points,
-                                1 if game_state.white_to_move else -1)
+    transposition_table = {}
+
+    valid_moves = order_moves(valid_moves)
+
+    find_negamax_move_alphabeta(game_state, valid_moves, set_depth, -checkmate_points, checkmate_points, 1 if game_state.white_to_move else -1)
+
     return next_move
+
+def board_key(game_state, depth, turn_multiplier):
+    board_tuple = tuple(tuple(row) for row in game_state.board)
+    return(board_tuple, 
+           game_state.white_to_move, 
+           game_state.en_passant_possible, 
+           game_state.white_castle_king_side,
+           game_state.white_castle_queen_side,
+           game_state.black_castle_king_side, 
+           game_state.black_castle_queen_side, 
+           depth, 
+           turn_multiplier)
 
 
 def find_negamax_move_alphabeta(game_state, valid_moves, depth, alpha, beta, turn_multiplier):
@@ -149,27 +194,38 @@ def find_negamax_move_alphabeta(game_state, valid_moves, depth, alpha, beta, tur
     trying to minimise score. Once the possibility of a higher max or lower min
     has been eliminated, there is no need to check further branches.
     """
-    global next_move
+    global next_move, transposition_table
+
+    key = board_key(game_state, depth, turn_multiplier)
+    if key in transposition_table:
+        return transposition_table[key]
+    
     if depth == 0:
-        return turn_multiplier * score_board(game_state)
+        score = turn_multiplier * score_board(game_state)
+        transposition_table[key] = score
+        return score
 
     max_score = -checkmate_points
-    for move in valid_moves:
+
+    for move in order_moves(valid_moves):
         game_state.make_move(move)
         next_moves = game_state.get_valid_moves()
         score = -find_negamax_move_alphabeta(game_state, next_moves, depth - 1, -beta, -alpha, -turn_multiplier)
+
+        game_state.undo_move()
+
         if score > max_score:
             max_score = score
             if depth == set_depth:
                 next_move = move
-        game_state.undo_move()
+        
+        alpha = max(alpha, max_score)
 
         # Pruning
-        if max_score > alpha:
-            alpha = max_score
         if alpha >= beta:
             break
 
+    transposition_table[key] = max_score
     return max_score
 
 
@@ -180,19 +236,25 @@ def score_board(game_state):
             return -checkmate_points  # Black wins
         else:
             return checkmate_points  # White wins
+        
     elif game_state.stalemate:
         return stalemate_points
 
     score = 0
+
     for row, column in game_state.white_piece_locations:
-        piece_type = game_state.board[row][column][1]
-        if piece_type != '--':
+        piece = game_state.board[row][column]
+
+        if piece != '--':
+            piece_type = piece[1]
             score += piece_scores[piece_type]
-            score += piece_positions['w' + piece_type][row][column]
+            score += piece_positions[piece][row][column]
 
     for row, column in game_state.black_piece_locations:
-        piece_type = game_state.board[row][column][1]
-        if piece_type != '--':
+        piece = game_state.board[row][column]
+
+        if piece!= '--':
+            piece_type = piece[1]
             score -= piece_scores[piece_type]
-            score -= piece_positions['b' + piece_type][row][column]
+            score -= piece_positions[piece][row][column]
     return score
