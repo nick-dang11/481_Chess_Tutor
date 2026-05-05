@@ -277,29 +277,38 @@ def draw_pieces(screen, board):
 
 
 def draw_move_log(screen, game_state, font):
-    """Draws move log to the right of the screen"""
+    """Draws move log with exactly one full turn (White and Black) per line"""
     move_log_area = p.Rect(board_width, 0, move_log_panel_width, move_log_panel_height)
     p.draw.rect(screen, p.Color('#2d2d2e'), move_log_area)
     move_log = game_state.move_log
-    move_texts = []
-    for i in range(0, len(move_log), 2):
-        move_string = f'{i // 2 + 1}. {str(move_log[i])} '
-        if i + 1 < len(move_log):  # Makes sure black has made a move
-            move_string += f'{str(move_log[i + 1])} '
-        move_texts.append(move_string)
-
-    move_per_row = 2
+    
     padding = 5
-    line_spacing = 2
+    line_spacing = 5
     text_y = padding
-    for i in range(0, len(move_texts), move_per_row):
-        text = ''
-        for j in range(move_per_row):
-            if i + j < len(move_texts):
-                text += move_texts[i + j]
-        text_object = font.render(text, True, p.Color('whitesmoke'))
+    
+    # Iterate by 2 to group White and Black moves together
+    for i in range(0, len(move_log), 2):
+        turn_num = i // 2 + 1
+        white_move = str(move_log[i])
+        
+        # Check if Black has moved yet for this turn
+        black_move = ""
+        if i + 1 < len(move_log):
+            black_move = str(move_log[i + 1])
+            
+        # Create the string for the full turn (e.g., "1. e4 e5")
+        turn_text = f"{turn_num}. {white_move} {black_move}"
+        
+        text_object = font.render(turn_text, True, p.Color('whitesmoke'))
+        
+        # Safety check: Stop drawing if we exceed the panel height
+        if text_y + text_object.get_height() > move_log_panel_height:
+            break
+            
         text_location = move_log_area.move(padding, text_y)
         screen.blit(text_object, text_location)
+        
+        # Increment Y for the next line
         text_y += text_object.get_height() + line_spacing
 
 
