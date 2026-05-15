@@ -4,12 +4,19 @@ import random
 
 # Depth of the algorithm determining AI moves. Higher set_depth == harder AI. Lower if engine is too slow.
 set_depth = 4
+checkmate_points = 100000
+stalemate_score = 0
 
-# Positive values are good for white, negative for black. i.e. black checkmate = -1000
-checkmate_points = 1000
-stalemate_points = 0
+MATERIAL_WEIGHT = 1.0
+POSITION_WEIGHT = 0.8
+MOBILITY_WEIGHT = 0.2
+
+piece_scores = {
+    'P': 100, 'N': 320, 'B': 330, 
+    'R': 500, 'Q': 900, 'K': 0
+}
+
 transposition_table = {}
-piece_scores = {'K': 20000, 'Q': 900, 'R': 500, 'B': 330, 'N': 320, 'P': 100}
 piece_positions = {
     'wP': [
         [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -126,30 +133,22 @@ def find_random_move(valid_moves):
     return random.choice(valid_moves)
 
 def order_moves(moves):
+    """
+    Sorts moves to make Alpha-Beta pruning significantly faster.
+    Prioritizes: Captures (MVV-LVA) > Promotions > Castling.
+    """
     def move_score(move):
         score = 0
-
-        if move.is_capture:
-            captured = move.piece_captured[1]
-            attack_piece = move.piece_moved[1]
-
-            if captured != '-':
-                
-                score += 10 * piece_scores[captured] - piece_scores[attack_piece]
-
         if move.is_pawn_promotion:
-            score += 9000
-        
+            score += 900
+        if move.piece_captured != '--':
+            # MVV-LVA: Taking a big piece with a small piece is best
+            score += 10 * piece_scores[move.piece_captured[1]] - piece_scores[move.piece_moved[1]]
         if move.is_castle_move:
-            score += 500
-
-        piece = move.piece_moved
-        if piece in piece_positions:
-            score += piece_positions[piece][move.end_row][move.end_column]
-            score -= piece_positions[piece][move.start_row][move.start_column]
-
+            score += 50
         return score
-    return sorted(moves, key = move_score, reverse = True)
+
+    return sorted(list(moves), key=move_score, reverse=True)
 
             
 
@@ -201,7 +200,7 @@ def find_negamax_move_alphabeta(game_state, valid_moves, depth, alpha, beta, tur
         return transposition_table[key]
     
     if depth == 0:
-        score = turn_multiplier * score_board(game_state)
+        score = turn_multiplier * evaluate_board(game_state)
         transposition_table[key] = score
         return score
 
@@ -229,32 +228,60 @@ def find_negamax_move_alphabeta(game_state, valid_moves, depth, alpha, beta, tur
     return max_score
 
 
-def score_board(game_state):
-    """Positive score is good for white; negative score is good for black."""
+def evaluate_board(game_state):
+    """
+    Evaluates board state; positive results for white, negative for black.
+    """
+
     if game_state.checkmate:
-        if game_state.white_to_move:
-            return -checkmate_points  # Black wins
-        else:
-            return checkmate_points  # White wins
-        
-    elif game_state.stalemate:
-        return stalemate_points
+        return -checkmate_points if game_state.white_to_move else checkmate_points
+    if game_state.stalemate:
+        return stalemate_score
+    
+    material_and_pos = 0
 
-    score = 0
+    for r in range(len(game_state.board)):
+        for c in range(len(game_state.board[r])):
+            piece = game_state.board[r][c]
+            if piece != '--':
+                color = piece[0]
+                type = piece[1]
 
-    for row, column in game_state.white_piece_locations:
-        piece = game_state.board[row][column]
+                val = piece_scores[type]
+                pos_bonus = piece_positions[piece][r][c]
 
-        if piece != '--':
-            piece_type = piece[1]
-            score += piece_scores[piece_type]
-            score += piece_positions[piece][row][column]
+                if color == 'w':
+                    material_and_pos += (val + pos_bonus)
+                else:
+                    material_and_pos -= (val + pos_bonus)
 
-    for row, column in game_state.black_piece_locations:
-        piece = game_state.board[row][column]
+    white_mobility, black_mobility = get_mobility_counts(game_state)
+    mobility_diff = white_mobility - black_mobility
 
-        if piece!= '--':
-            piece_type = piece[1]
-            score -= piece_scores[piece_type]
-            score -= piece_positions[piece][row][column]
-    return score
+    final_score = (material_and_pos * MATERIAL_WEIGHT) + (mobility_diff * MOBILITY_WEIGHT)
+    return final_score
+
+def get_mobility_counts(game_state):
+    original_state = {
+        'turn': game_state.white_to_move,
+        'mate': game_state.checkmate,
+        'stale': game_state.stalemate,
+        'in_check': game_state.in_check,
+        'pins': game_state.pins[:],
+        'checks': game_state.checks[:]
+    }
+    
+    game_state.white_to_move = True
+    white_m = len(game_state.get_valid_moves())
+    
+    game_state.white_to_move = False
+    black_m = len(game_state.get_valid_moves())
+    
+    game_state.white_to_move = original_state['turn']
+    game_state.checkmate = original_state['mate']
+    game_state.stalemate = original_state['stale']
+    game_state.in_check = original_state['in_check']
+    game_state.pins[:] = original_state['pins']
+    game_state.checks[:] = original_state['checks']
+    
+    return white_m, black_m

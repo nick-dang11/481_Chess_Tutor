@@ -1,10 +1,11 @@
 import pygame as p
-import ChessEngine, ChessAI
+import ChessEngine
+import ChessAI
 import ChessTutor
 
 # Player settings. Turn player_one to True to play as white and/or player_two to True to play black.
 player_one = True  # If the AI is playing white, then False
-player_two = True  # Same as above but for black
+player_two = False  # Same as above but for black
 
 p.init()  # Initialize pygame
 

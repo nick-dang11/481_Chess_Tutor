@@ -23,12 +23,12 @@ class ChessTutor:
 
         # score suggested move
         gs.make_move(suggested_move)
-        suggested_eval = ChessAI.score_board(gs)
+        suggested_eval = ChessAI.evaluate_board(gs)
         gs.undo_move() # undo hypothetical suggestion
 
         # score AI's best move 
         gs.make_move(best_move)
-        best_eval = ChessAI.score_board(gs)
+        best_eval = ChessAI.evaluate_board(gs)
         gs.undo_move()
 
         # normalize
