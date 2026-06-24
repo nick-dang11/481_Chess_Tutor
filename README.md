@@ -3,6 +3,8 @@ To run this project, you will need a Gemini API key.
 1. Retrieve API key from https://aistudio.google.com/api-keys.
 2. Create config.py in root directory (481_Chess_Tutor/config.py) and add your API key: GEMINI_API_KEY=your_API_key_here
 
+Video Demo: https://www.youtube.com/watch?v=7-NxR871P-M
+
 This chess tutor is a friendly agent that advises moves, along with explanations based on the fundamentals and properties of chess. 
 Using either chess.com or lichess.com, the explanations should include analysis as well as move ratings (great, best, brilliant).
 This intends to ease newer players with a basic understanding of chess into understanding what moves are beneficial, and for what purpose.
