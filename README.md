@@ -1,7 +1,11 @@
-Operation Instructions:
+# Operation Instructions:
 To run this project, you will need a Gemini API key. 
 1. Retrieve API key from https://aistudio.google.com/api-keys.
 2. Create config.py in root directory (481_Chess_Tutor/config.py) and add your API key: GEMINI_API_KEY=your_API_key_here
+3. Run ChessMain.py with Python interpreter 3.13 for pygame access.
+
+During White's turns you can right click a piece and the subsequent position to suggest moves to the tutor. This will be evaluated and graded by the tutor, who will provide feedback in the GUI. Black is played by an AI and can be changed to where the user can make moves for Black in ChessMain:8 by setting player_two = True. Note that Black does not have the ability for moves to be graded by the tutor.
+
 
 Video Demo: https://www.youtube.com/watch?v=7-NxR871P-M
 
