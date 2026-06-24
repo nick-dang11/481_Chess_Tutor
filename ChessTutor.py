@@ -1,12 +1,13 @@
 import os
 import ChessAI
+import config
 from google import genai
 
 
 class ChessTutor:
     def __init__(self):
         # configure Gemini API
-        self.client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+        self.client = genai.Client(api_key = config.GEMINI_API_KEY)
         self.model_id = "gemini-2.5-flash-lite"
 
     def get_tutor_response(self, gs, suggested_move, valid_moves):
